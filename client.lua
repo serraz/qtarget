@@ -82,6 +82,7 @@ local nuiData = {}
 local table_wipe = table.wipe
 local pairs = pairs
 local CheckOptions
+local isTargeting = false
 
 local function LeaveTarget()
 	table_wipe(sendData)
@@ -167,6 +168,7 @@ local Models   = {}
 local Zones    = {}
 
 local function EnableTarget()
+	isTargeting = true
 	if success or not IsControlEnabled(0, 24) or IsNuiFocused() then return end
 	if not CheckOptions then CheckOptions = _ENV.CheckOptions end
 	if not targetActive and CheckOptions then
@@ -197,7 +199,10 @@ local function EnableTarget()
 			local sleep = 0
 			local hit, coords, distance, entity, entityType = RaycastCamera(curFlag, GetEntityCoords(playerPed))
 			if curFlag == 30 then curFlag = -1 else curFlag = 30 end
-
+			RequestStreamedTextureDict("shared")
+			if not HasStreamedTextureDictLoaded("shared") then
+				Wait(0)
+			end
 			if distance <= Config.MaxDistance then
 				if entityType > 0 then
 
@@ -274,6 +279,16 @@ local function EnableTarget()
 						if distance < (closestDis or Config.MaxDistance) and distance <= zone.targetoptions.distance and zone:isPointInside(coords) then
 							closestDis = distance
 							closestZone = zone
+							CreateThread(function()
+								while isTargeting do
+									Wait(0)
+									RequestStreamedTextureDict("shared")
+									if not HasStreamedTextureDictLoaded("shared") then
+										Wait(0)
+									end
+									SetDrawOrigin(zone.center, 0) --add this
+									DrawSprite("shared", "emptydot_32", 0, 0, 0.02, 0.035, 0, 255,255,255, 255.0)
+								end
 						end
 					end
 
@@ -322,6 +337,7 @@ local function EnableTarget()
 end
 
 local function DisableTarget()
+	isTargeting = false
 	if targetActive then
 		SetNuiFocus(false, false)
 		SetNuiFocusKeepInput(false)
